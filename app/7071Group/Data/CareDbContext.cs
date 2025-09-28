@@ -15,10 +15,6 @@ public class CareDbContext : DbContext
     {
         get; set;
     }
-    public DbSet<Shift> Shifts
-    {
-        get; set;
-    }
     public DbSet<ServiceRegistration> ServiceRegistrations
     {
         get; set;

@@ -11,6 +11,10 @@ public class HrDbContext : DbContext
     {
         get; set;
     }
+    public DbSet<Shift> Shifts
+    {
+        get; set;
+    }
     public DbSet<Payroll> Payrolls
     {
         get; set;
