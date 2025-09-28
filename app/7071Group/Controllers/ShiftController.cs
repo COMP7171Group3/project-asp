@@ -170,7 +170,6 @@ namespace _7071Group.Controllers
                     throw;
                 }
             }
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

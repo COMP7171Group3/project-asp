@@ -124,7 +124,7 @@ namespace _7071Group.Controllers
                     {
                         await tx.RollbackAsync();
 
-                        if (!RentalHistoryExists(rentalHistory.HistoryID))
+                        if (!RentalHistoryExists(rentalHistory.AssetID))
                         {
                             return NotFound();
                         }
