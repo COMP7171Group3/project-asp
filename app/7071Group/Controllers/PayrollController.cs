@@ -12,9 +12,9 @@ namespace _7071Group.Controllers
 {
     public class PayrollController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly HrDbContext _context;
 
-        public PayrollController(ApplicationDbContext context)
+        public PayrollController(HrDbContext context)
         {
             _context = context;
         }
@@ -58,9 +58,20 @@ namespace _7071Group.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(payroll);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.Payrolls.Add(payroll);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+
+                    return RedirectToAction(nameof(Index));
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
             return View(payroll);
         }
@@ -95,13 +106,17 @@ namespace _7071Group.Controllers
 
             if (ModelState.IsValid)
             {
+                using var tx = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    _context.Update(payroll);
+                    _context.Payrolls.Update(payroll);
                     await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
+                    await tx.RollbackAsync();
+
                     if (!PayrollExists(payroll.PayrollID))
                     {
                         return NotFound();
@@ -140,12 +155,21 @@ namespace _7071Group.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var payroll = await _context.Payrolls.FindAsync(id);
-            if (payroll != null)
+            if(payroll != null)
             {
-                _context.Payrolls.Remove(payroll);
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.Payrolls.Remove(payroll);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

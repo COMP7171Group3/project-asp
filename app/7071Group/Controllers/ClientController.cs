@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using _7071Group.Data;
 using _7071Group.Models;
-// 
+
 namespace _7071Group.Controllers
 {
     public class ClientController : Controller
@@ -117,7 +117,7 @@ namespace _7071Group.Controllers
                 {
                     await tx.RollbackAsync();
 
-                    if (!_context.Clients.Any(e => e.ClientID == client.ClientID))
+                    if (!ClientExists(client.ClientID))
                     {
                         return NotFound();
                     }
@@ -170,7 +170,6 @@ namespace _7071Group.Controllers
                     throw;
                 }
             }
-
             return RedirectToAction(nameof(Index));
         }
 

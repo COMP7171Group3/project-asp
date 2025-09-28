@@ -12,9 +12,9 @@ namespace _7071Group.Controllers
 {
     public class InvoiceController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly CareDbContext _context;
 
-        public InvoiceController(ApplicationDbContext context)
+        public InvoiceController(CareDbContext context)
         {
             _context = context;
         }
@@ -58,9 +58,20 @@ namespace _7071Group.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(invoice);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.Invoices.Add(invoice);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+
+                    return RedirectToAction(nameof(Index));
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
             return View(invoice);
         }
@@ -95,13 +106,17 @@ namespace _7071Group.Controllers
 
             if (ModelState.IsValid)
             {
+                using var tx = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    _context.Update(invoice);
+                    _context.Invoices.Update(invoice);
                     await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
+                    await tx.RollbackAsync();
+
                     if (!InvoiceExists(invoice.InvoiceID))
                     {
                         return NotFound();
@@ -142,10 +157,19 @@ namespace _7071Group.Controllers
             var invoice = await _context.Invoices.FindAsync(id);
             if (invoice != null)
             {
-                _context.Invoices.Remove(invoice);
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.Invoices.Remove(invoice);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

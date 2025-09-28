@@ -12,9 +12,9 @@ namespace _7071Group.Controllers
 {
     public class RentalHistoryController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly HousingDbContext _context;
 
-        public RentalHistoryController(ApplicationDbContext context)
+        public RentalHistoryController(HousingDbContext context)
         {
             _context = context;
         }
@@ -58,9 +58,20 @@ namespace _7071Group.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(rentalHistory);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.RentalHistories.Add(rentalHistory);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+
+                    return RedirectToAction(nameof(Index));
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
             return View(rentalHistory);
         }
@@ -102,13 +113,25 @@ namespace _7071Group.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!RentalHistoryExists(rentalHistory.AssetID))
+                    using var tx = await _context.Database.BeginTransactionAsync();
+                    try
                     {
-                        return NotFound();
+                        _context.RentalHistories.Update(rentalHistory);
+                        await _context.SaveChangesAsync();
+                        await tx.CommitAsync();
                     }
-                    else
+                    catch (DbUpdateConcurrencyException)
                     {
-                        throw;
+                        await tx.RollbackAsync();
+
+                        if (!RentalHistoryExists(rentalHistory.HistoryID))
+                        {
+                            return NotFound();
+                        }
+                        else
+                        {
+                            throw;
+                        }
                     }
                 }
                 return RedirectToAction(nameof(Index));
@@ -142,10 +165,19 @@ namespace _7071Group.Controllers
             var rentalHistory = await _context.RentalHistories.FindAsync(id);
             if (rentalHistory != null)
             {
-                _context.RentalHistories.Remove(rentalHistory);
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.RentalHistories.Remove(rentalHistory);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

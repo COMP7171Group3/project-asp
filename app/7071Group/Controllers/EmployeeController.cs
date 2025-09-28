@@ -12,9 +12,9 @@ namespace _7071Group.Controllers
 {
     public class EmployeeController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly HrDbContext _context;
 
-        public EmployeeController(ApplicationDbContext context)
+        public EmployeeController(HrDbContext context)
         {
             _context = context;
         }
@@ -58,9 +58,20 @@ namespace _7071Group.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(employee);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.Employees.Add(employee);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+
+                    return RedirectToAction(nameof(Index));
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
             return View(employee);
         }
@@ -95,13 +106,17 @@ namespace _7071Group.Controllers
 
             if (ModelState.IsValid)
             {
+                using var tx = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    _context.Update(employee);
+                    _context.Employees.Update(employee);
                     await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
+                    await tx.RollbackAsync();
+
                     if (!EmployeeExists(employee.EmployeeID))
                     {
                         return NotFound();
@@ -142,10 +157,19 @@ namespace _7071Group.Controllers
             var employee = await _context.Employees.FindAsync(id);
             if (employee != null)
             {
-                _context.Employees.Remove(employee);
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.Employees.Remove(employee);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

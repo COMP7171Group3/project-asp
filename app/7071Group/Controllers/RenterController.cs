@@ -12,9 +12,9 @@ namespace _7071Group.Controllers
 {
     public class RenterController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly HousingDbContext _context;
 
-        public RenterController(ApplicationDbContext context)
+        public RenterController(HousingDbContext context)
         {
             _context = context;
         }
@@ -58,9 +58,20 @@ namespace _7071Group.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(renter);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.Renters.Add(renter);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+
+                    return RedirectToAction(nameof(Index));
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
             return View(renter);
         }
@@ -95,13 +106,17 @@ namespace _7071Group.Controllers
 
             if (ModelState.IsValid)
             {
+                using var tx = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    _context.Update(renter);
+                    _context.Renters.Update(renter);
                     await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
+                    await tx.RollbackAsync();
+
                     if (!RenterExists(renter.RenterID))
                     {
                         return NotFound();
@@ -142,10 +157,19 @@ namespace _7071Group.Controllers
             var renter = await _context.Renters.FindAsync(id);
             if (renter != null)
             {
-                _context.Renters.Remove(renter);
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.Renters.Remove(renter);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

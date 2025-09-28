@@ -12,9 +12,9 @@ namespace _7071Group.Controllers
 {
     public class ServiceController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly CareDbContext _context;
 
-        public ServiceController(ApplicationDbContext context)
+        public ServiceController(CareDbContext context)
         {
             _context = context;
         }
@@ -58,9 +58,20 @@ namespace _7071Group.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(service);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.Services.Add(service);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+
+                    return RedirectToAction(nameof(Index));
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
             return View(service);
         }
@@ -95,13 +106,17 @@ namespace _7071Group.Controllers
 
             if (ModelState.IsValid)
             {
+                using var tx = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    _context.Update(service);
+                    _context.Services.Update(service);
                     await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
+                    await tx.RollbackAsync();
+
                     if (!ServiceExists(service.ServiceID))
                     {
                         return NotFound();
@@ -142,10 +157,19 @@ namespace _7071Group.Controllers
             var service = await _context.Services.FindAsync(id);
             if (service != null)
             {
-                _context.Services.Remove(service);
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.Services.Remove(service);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

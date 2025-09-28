@@ -12,9 +12,9 @@ namespace _7071Group.Controllers
 {
     public class AttendanceController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly HrDbContext _context;
 
-        public AttendanceController(ApplicationDbContext context)
+        public AttendanceController(HrDbContext context)
         {
             _context = context;
         }
@@ -58,9 +58,20 @@ namespace _7071Group.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(attendance);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.Attendances.Add(attendance);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+
+                    return RedirectToAction(nameof(Index));
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
             return View(attendance);
         }
@@ -95,13 +106,17 @@ namespace _7071Group.Controllers
 
             if (ModelState.IsValid)
             {
+                using var tx = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    _context.Update(attendance);
+                    _context.Attendances.Update(attendance);
                     await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
+                    await tx.RollbackAsync();
+
                     if (!AttendanceExists(attendance.AttendanceID))
                     {
                         return NotFound();
@@ -142,10 +157,19 @@ namespace _7071Group.Controllers
             var attendance = await _context.Attendances.FindAsync(id);
             if (attendance != null)
             {
-                _context.Attendances.Remove(attendance);
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.Attendances.Remove(attendance);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

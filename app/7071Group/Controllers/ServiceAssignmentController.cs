@@ -12,9 +12,9 @@ namespace _7071Group.Controllers
 {
     public class ServiceAssignmentController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly CareDbContext _context;
 
-        public ServiceAssignmentController(ApplicationDbContext context)
+        public ServiceAssignmentController(CareDbContext context)
         {
             _context = context;
         }
@@ -58,9 +58,20 @@ namespace _7071Group.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(serviceAssignment);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.ServiceAssignments.Add(serviceAssignment);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+
+                    return RedirectToAction(nameof(Index));
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
             return View(serviceAssignment);
         }
@@ -95,13 +106,17 @@ namespace _7071Group.Controllers
 
             if (ModelState.IsValid)
             {
+                using var tx = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    _context.Update(serviceAssignment);
+                    _context.ServiceAssignments.Update(serviceAssignment);
                     await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
+                    await tx.RollbackAsync();
+
                     if (!ServiceAssignmentExists(serviceAssignment.EmployeeID))
                     {
                         return NotFound();
@@ -142,10 +157,19 @@ namespace _7071Group.Controllers
             var serviceAssignment = await _context.ServiceAssignments.FindAsync(id);
             if (serviceAssignment != null)
             {
-                _context.ServiceAssignments.Remove(serviceAssignment);
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.ServiceAssignments.Remove(serviceAssignment);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

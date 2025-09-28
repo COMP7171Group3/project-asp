@@ -12,7 +12,8 @@ namespace UITests
     [TestFixture]
     public class EmployeeTests
     {
-        private ApplicationDbContext? _context;
+        private HrDbContext? _hrContext;
+        private CareDbContext? _careContext;
         private Employee? _testEmployee;
         private IWebDriver? _driver;
         private string _baseUrl = "http://localhost:5023"; // Adjust URL if needed
@@ -48,15 +49,15 @@ namespace UITests
             
             var connectionString = configuration.GetConnectionString("DefaultConnection");
             
-            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            var options = new DbContextOptionsBuilder<HrDbContext>()
                 .UseSqlite(connectionString)
                 .Options;
             
-            _context = new ApplicationDbContext(options);
+            _hrContext = new HrDbContext(options);
             
             // Ensure the database is created and seeded
-            _context.Database.EnsureDeleted();
-            _context.Database.EnsureCreated();
+            _hrContext.Database.EnsureDeleted();
+            _hrContext.Database.EnsureCreated();
         }
 
         [Test]
@@ -88,14 +89,14 @@ namespace UITests
         {
             // Arrange
             int testEmployeeId = 1;
-            if (_context!.Clients.Any())
+            if (_careContext!.Clients.Any())
             {
-                testEmployeeId = _context.Employees.OrderBy(s => s.EmployeeID).Last().EmployeeID + 1;
+                testEmployeeId = _hrContext.Employees.OrderBy(s => s.EmployeeID).Last().EmployeeID + 1;
             }
 
             _testEmployee = CreateTestEmployee(testEmployeeId, "John Doe", "123 Main St", "555-555-5555", "Manager", "Full Time", 50000);
-            _context!.Employees.Add(_testEmployee);
-            _context.SaveChanges();
+            _hrContext!.Employees.Add(_testEmployee);
+            _hrContext.SaveChanges();
 
             // Navigate to the employee index page
             _driver!.Navigate().GoToUrl($"{_baseUrl}/Employee/Details/{_testEmployee.EmployeeID}");
@@ -109,15 +110,15 @@ namespace UITests
         {
             // Arrange
             int testEmployeeId = 1;
-            if (_context!.Employees.Any())
+            if (_hrContext!.Employees.Any())
             {
-                testEmployeeId = _context.Employees.OrderBy(e => e.EmployeeID).Last().EmployeeID + 1;
+                testEmployeeId = _hrContext.Employees.OrderBy(e => e.EmployeeID).Last().EmployeeID + 1;
             }
 
             // Create a test employee
             _testEmployee = CreateTestEmployee(testEmployeeId, "John Doe", "123 Main St", "123-456-7890", "Software Engineer", "Full-Time", 50000);
-            _context!.Employees.Add(_testEmployee);
-            _context.SaveChanges();
+            _hrContext!.Employees.Add(_testEmployee);
+            _hrContext.SaveChanges();
 
             // Act
             // Navigate to the edit employee page
@@ -164,15 +165,15 @@ namespace UITests
         {
             // Arrange
             int testEmployeeId = 1;
-            if (_context!.Employees.Any())
+            if (_hrContext!.Employees.Any())
             {
-                testEmployeeId = _context.Employees.OrderBy(e => e.EmployeeID).Last().EmployeeID + 1;
+                testEmployeeId = _hrContext.Employees.OrderBy(e => e.EmployeeID).Last().EmployeeID + 1;
             }
 
             // Create a test employee
             _testEmployee = CreateTestEmployee(testEmployeeId, "John Doe", "123 Main St", "123-456-7890", "Software Engineer", "Full-Time", 50000);
-            _context!.Employees.Add(_testEmployee);
-            _context.SaveChanges();
+            _hrContext!.Employees.Add(_testEmployee);
+            _hrContext.SaveChanges();
 
             // Act
             // Navigate to the delete employee page

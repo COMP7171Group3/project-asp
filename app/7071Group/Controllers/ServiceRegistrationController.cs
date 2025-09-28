@@ -12,9 +12,9 @@ namespace _7071Group.Controllers
 {
     public class ServiceRegistrationController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly CareDbContext _context;
 
-        public ServiceRegistrationController(ApplicationDbContext context)
+        public ServiceRegistrationController(CareDbContext context)
         {
             _context = context;
         }
@@ -58,9 +58,20 @@ namespace _7071Group.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(serviceRegistration);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.ServiceRegistrations.Add(serviceRegistration);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+
+                    return RedirectToAction(nameof(Index));
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
             return View(serviceRegistration);
         }
@@ -95,14 +106,18 @@ namespace _7071Group.Controllers
 
             if (ModelState.IsValid)
             {
+                using var tx = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    _context.Update(serviceRegistration);
+                    _context.ServiceRegistrations.Update(serviceRegistration);
                     await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!ServiceRegistrationExists(serviceRegistration.ClientID))
+                    await tx.RollbackAsync();
+
+                    if (!ServiceRegistrationExists(serviceRegistration.ServiceID))
                     {
                         return NotFound();
                     }
@@ -142,10 +157,19 @@ namespace _7071Group.Controllers
             var serviceRegistration = await _context.ServiceRegistrations.FindAsync(id);
             if (serviceRegistration != null)
             {
-                _context.ServiceRegistrations.Remove(serviceRegistration);
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.ServiceRegistrations.Remove(serviceRegistration);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

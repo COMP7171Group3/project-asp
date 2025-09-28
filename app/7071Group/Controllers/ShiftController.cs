@@ -12,9 +12,9 @@ namespace _7071Group.Controllers
 {
     public class ShiftController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly HrDbContext _context;
 
-        public ShiftController(ApplicationDbContext context)
+        public ShiftController(HrDbContext context)
         {
             _context = context;
         }
@@ -58,9 +58,20 @@ namespace _7071Group.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(shift);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.Shifts.Add(shift);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+
+                    return RedirectToAction(nameof(Index));
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
             return View(shift);
         }
@@ -95,13 +106,17 @@ namespace _7071Group.Controllers
 
             if (ModelState.IsValid)
             {
+                using var tx = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    _context.Update(shift);
+                    _context.Shifts.Update(shift);
                     await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
+                    await tx.RollbackAsync();
+
                     if (!ShiftExists(shift.ShiftID))
                     {
                         return NotFound();
@@ -142,9 +157,19 @@ namespace _7071Group.Controllers
             var shift = await _context.Shifts.FindAsync(id);
             if (shift != null)
             {
-                _context.Shifts.Remove(shift);
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.Shifts.Remove(shift);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
-
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }

@@ -12,9 +12,9 @@ namespace _7071Group.Controllers
 {
     public class DamageReportController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly HousingDbContext _context;
 
-        public DamageReportController(ApplicationDbContext context)
+        public DamageReportController(HousingDbContext context)
         {
             _context = context;
         }
@@ -58,9 +58,20 @@ namespace _7071Group.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(damageReport);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.DamageReports.Add(damageReport);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+
+                    return RedirectToAction(nameof(Index));
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
             return View(damageReport);
         }
@@ -95,13 +106,17 @@ namespace _7071Group.Controllers
 
             if (ModelState.IsValid)
             {
+                using var tx = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    _context.Update(damageReport);
+                    _context.DamageReports.Update(damageReport);
                     await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
+                    await tx.RollbackAsync();
+
                     if (!DamageReportExists(damageReport.ReportID))
                     {
                         return NotFound();
@@ -142,10 +157,19 @@ namespace _7071Group.Controllers
             var damageReport = await _context.DamageReports.FindAsync(id);
             if (damageReport != null)
             {
-                _context.DamageReports.Remove(damageReport);
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.DamageReports.Remove(damageReport);
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

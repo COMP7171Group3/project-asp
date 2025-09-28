@@ -11,7 +11,7 @@ namespace UITests
     [TestFixture]
     public class ServiceTests
     {
-        private ApplicationDbContext? _context;
+        private CareDbContext? _context;
         private Service? _testService;
         private IWebDriver? _driver;
         private string _baseUrl = "http://localhost:5023"; // Adjust URL if needed
@@ -44,11 +44,11 @@ namespace UITests
 
             var connectionString = configuration.GetConnectionString("DefaultConnection");
 
-            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            var options = new DbContextOptionsBuilder<CareDbContext>()
                 .UseSqlite(connectionString)
                 .Options;
 
-            _context = new ApplicationDbContext(options);
+            _context = new CareDbContext(options);
 
             // Ensure the database is created and seeded
             _context.Database.EnsureDeleted();
