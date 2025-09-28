@@ -7,40 +7,29 @@ public class CareDbContext : DbContext
 {
     public CareDbContext(DbContextOptions<CareDbContext> options) : base(options) { }
 
-    public DbSet<Client> Clients
-    {
-        get; set;
-    }
-    public DbSet<ServiceAssignment> ServiceAssignments
-    {
-        get; set;
-    }
-    public DbSet<ServiceRegistration> ServiceRegistrations
-    {
-        get; set;
-    }
-    public DbSet<Service> Services
-    {
-        get; set;
-    }
-    public DbSet<Invoice> Invoices
-    {
-        get; set;
-    }
+    public DbSet<Client> Clients { get; set; } = null!;
+    public DbSet<ServiceAssignment> ServiceAssignments { get; set; } = null!;
+    public DbSet<ServiceRegistration> ServiceRegistrations { get; set; } = null!;
+    public DbSet<Service> Services { get; set; } = null!;
+    public DbSet<Invoice> Invoices { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
 
-        // Composite Keys & Foreign Key relationships
         builder.Entity<ServiceAssignment>()
-            .ToTable("Service_Assignment")
-            .HasKey(sa => new { sa.EmployeeID, sa.ServiceID });
+            .HasKey(sa => sa.AssignedID);
 
         builder.Entity<ServiceAssignment>()
             .HasOne<Employee>()
             .WithMany()
             .HasForeignKey(sa => sa.EmployeeID)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<ServiceAssignment>()
+            .HasOne<Service>()
+            .WithMany()
+            .HasForeignKey(sa => sa.ServiceID)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<ServiceRegistration>()

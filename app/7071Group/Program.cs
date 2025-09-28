@@ -4,28 +4,25 @@ using _7071Group.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
-                       throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString));
-builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+// Local helper to get connection string or throw
+string GetConnection(string name) =>
+    builder.Configuration.GetConnectionString(name) ??
+    throw new InvalidOperationException($"Connection string '{name}' not found.");
 
-//builder.Services.AddDbContext<AuthDbContext>(options =>
-//    options.UseSqlite("Data Source=auth.db"));
-
-//builder.Services.AddDbContext<CareDbContext>(options =>
-//    options.UseSqlite("Data Source=care.db"));
-
-//builder.Services.AddDbContext<HrDbContext>(options =>
-//    options.UseSqlite("Data Source=hr.db"));
-
-//builder.Services.AddDbContext<HousingDbContext>(options =>
-//    options.UseSqlite("Data Source=housing.db"));
-
+// Register DbContexts with reduced repetition
+builder.Services.AddDbContext<AuthDbContext>(options =>
+    options.UseSqlite(GetConnection("AuthDb")));
+builder.Services.AddDbContext<CareDbContext>(options =>
+    options.UseSqlite(GetConnection("CareDb")));
+builder.Services.AddDbContext<HrDbContext>(options =>
+    options.UseSqlite(GetConnection("HrDb")));
+builder.Services.AddDbContext<HousingDbContext>(options =>
+    options.UseSqlite(GetConnection("HousingDb")));
 
 builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddEntityFrameworkStores<ApplicationDbContext>();
+    .AddEntityFrameworkStores<AuthDbContext>();
+
+builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
