@@ -58,7 +58,6 @@ namespace _7071Group.Controllers
         {
             if (ModelState.IsValid)
             {
-                // Start local transaction
                 using var tx = await _context.Database.BeginTransactionAsync();
                 try
                 {
@@ -76,7 +75,6 @@ namespace _7071Group.Controllers
             }
             return View(client);
         }
-
 
         // GET: Client/Edit/5
         public async Task<IActionResult> Edit(int? id)
@@ -108,7 +106,6 @@ namespace _7071Group.Controllers
 
             if (ModelState.IsValid)
             {
-                // Start local transaction
                 using var tx = await _context.Database.BeginTransactionAsync();
                 try
                 {
@@ -116,10 +113,18 @@ namespace _7071Group.Controllers
                     await _context.SaveChangesAsync();
                     await tx.CommitAsync();
                 }
-                catch
+                catch (DbUpdateConcurrencyException)
                 {
                     await tx.RollbackAsync();
-                    throw;
+
+                    if (!_context.Clients.Any(e => e.ClientID == client.ClientID))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
                 }
                 return RedirectToAction(nameof(Index));
             }
@@ -152,7 +157,6 @@ namespace _7071Group.Controllers
             var client = await _context.Clients.FindAsync(id);
             if (client != null)
             {
-                // Start local transaction
                 using var tx = await _context.Database.BeginTransactionAsync();
                 try
                 {
@@ -167,7 +171,6 @@ namespace _7071Group.Controllers
                 }
             }
 
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
