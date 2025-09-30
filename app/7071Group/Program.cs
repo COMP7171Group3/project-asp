@@ -19,11 +19,16 @@ builder.Services.AddDbContext<HrDbContext>(options =>
 builder.Services.AddDbContext<HousingDbContext>(options =>
     options.UseSqlite(GetConnection("HousingDb")));
 
+// Add Identity services
 builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddEntityFrameworkStores<AuthDbContext>();
 
+// Add services to the container.
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddControllersWithViews();
+
+// Register application services
+builder.Services.AddScoped<CareService>();
 
 var app = builder.Build();
 
@@ -41,9 +46,8 @@ else
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(

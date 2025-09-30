@@ -5,26 +5,5 @@ riderModule.iml
 /_ReSharper.Caches/
 /.vs/Assignment2-7071/v17
 /.vs
-
-# Docker volumes and generated data (keep Dockerfile and docker-compose.yml in git)
-/data/
-/certs/*.pfx
-/certs/*.key
-/certs/*.crt
-
-# Environment files
 .env
-.env.local
-.env.*.local
-
-# Database files (let Docker volumes handle persistence)
-*.db
-*.db-shm
-*.db-wal
-
-# Logs
-logs/
-*.log
-
-# Test results
-TestResults/
+secrets/

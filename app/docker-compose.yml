@@ -1,19 +1,21 @@
+version: '3.8'
+
 services:
   web:
     build: .
+    container_name: comp7071-webapp
     ports:
-      - "8080:80"
+      - "8000:80"
+      - "8001:443"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_URLS
+      - ASPNETCORE_HTTPS_PORTS
+      - ASPNETCORE_Kestrel__Certificates__Default__Path
+      - ASPNETCORE_Kestrel__Certificates__Default__Password
     volumes:
-      - authdb-data:/app/auth.db
-      - caredb-data:/app/care.db
-      - housingdb-data:/app/housing.db
-      - hrdb-data:/app/hr.db
-
-volumes:
-  authdb-data:
-  caredb-data:
-  housingdb-data:
-  hrdb-data:
+      - ./7071Group/auth.db:/app/auth.db
+      - ./7071Group/care.db:/app/care.db
+      - ./7071Group/housing.db:/app/housing.db
+      - ./7071Group/hr.db:/app/hr.db
+      - ${USERPROFILE}/.aspnet/https:/https/
+    restart: unless-stopped
