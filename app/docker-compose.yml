@@ -1,0 +1,19 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+    volumes:
+      - authdb-data:/app/auth.db
+      - caredb-data:/app/care.db
+      - housingdb-data:/app/housing.db
+      - hrdb-data:/app/hr.db
+
+volumes:
+  authdb-data:
+  caredb-data:
+  housingdb-data:
+  hrdb-data:
