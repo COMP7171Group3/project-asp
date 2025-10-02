@@ -1,0 +1,139 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: comp7171-webapp
+  namespace: default
+  labels:
+    app: comp7171-webapp
+spec:
+  selector:
+    matchLabels:
+      app: comp7171-webapp
+  replicas: 3
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: comp7171-webapp
+      annotations:
+        # Control Kata VM resources
+        io.katacontainers.config.hypervisor.default_vcpus: "2"
+        io.katacontainers.config.hypervisor.default_memory: "1024"
+        io.katacontainers.config.hypervisor.kernel_params: "init=/sbin/init"
+        # Enable VM-level security features
+        io.katacontainers.config.runtime.enable_debug: "false"
+        io.katacontainers.config.runtime.disable_new_netns: "false"
+    spec:
+      runtimeClassName: kata
+
+      # Kata-optimized security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: db-init
+          image: comp7171-webapp:latest
+          command: ["sh", "-c"]
+          args:
+            - |
+              echo "Initializing database directories..."
+              mkdir -p /app/data
+
+              # Copy database files if they exist in the image
+              if [ -f /app/auth.db ]; then cp /app/auth.db /app/data/; fi
+              if [ -f /app/care.db ]; then cp /app/care.db /app/data/; fi
+              if [ -f /app/housing.db ]; then cp /app/housing.db /app/data/; fi
+              if [ -f /app/hr.db ]; then cp /app/hr.db /app/data/; fi
+
+              echo "Database initialization complete"
+          volumeMounts:
+            - name: db-storage
+              mountPath: /app/data
+      containers:
+        - name: comp7171-webapp
+          image: comp7171-webapp:latest
+
+          # Resource limits for stability
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+
+          # Health checks for automatic pod replacement
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+              scheme: HTTP
+            initialDelaySeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 5
+            periodSeconds: 15
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+              scheme: HTTP
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+            periodSeconds: 10
+
+          # HTTPS Configuration
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Production"
+            - name: ASPNETCORE_URLS
+              value: "https://+:443;http://+:80"
+            - name: ASPNETCORE_HTTPS_PORTS
+              value: "443"
+            - name: ASPNETCORE_Kestrel__Certificates__Default__Path
+              value: "/https/aspnetapp.pfx"
+            - name: ASPNETCORE_Kestrel__Certificates__Default__Password
+              valueFrom:
+                secretKeyRef:
+                  name: comp7171-cert-secret
+                  key: cert-password
+            - name: ConnectionStrings__AuthConnection
+              value: "Data Source=/app/data/auth.db"
+            - name: ConnectionStrings__CareConnection
+              value: "Data Source=/app/data/care.db"
+            - name: ConnectionStrings__HousingConnection
+              value: "Data Source=/app/data/housing.db"
+            - name: ConnectionStrings__HrConnection
+              value: "Data Source=/app/data/hr.db"
+
+          ports:
+            - containerPort: 80
+              name: http
+            - containerPort: 443
+              name: https
+
+          volumeMounts:
+            - name: cert-volume
+              mountPath: /https
+              readOnly: true
+            - name: db-storage
+              mountPath: /app/data
+
+      volumes:
+        - name: cert-volume
+          secret:
+            secretName: comp7171-cert-secret
+        # Single PVC for all databases
+        - name: db-storage
+          persistentVolumeClaim:
+            claimName: comp7171-db-pvc
+
+      restartPolicy: Always

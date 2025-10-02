@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: comp7171-service
+  namespace: default
+  labels:
+    app: comp7171-webapp
+spec:
+  type: LoadBalancer
+  selector:
+    app: comp7171-webapp
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 80
+      protocol: TCP
+    - name: https
+      port: 8001
+      targetPort: 443
+      protocol: TCP

@@ -1,13 +1,14 @@
-version: '3.8'
+version: "3.8"
 
 services:
   web:
     build: .
-    container_name: comp7071-webapp
+    container_name: comp7171-webapp
     ports:
       - "8000:80"
       - "8001:443"
     environment:
+      - ASPNETCORE_ENVIRONMENT
       - ASPNETCORE_URLS
       - ASPNETCORE_HTTPS_PORTS
       - ASPNETCORE_Kestrel__Certificates__Default__Path
