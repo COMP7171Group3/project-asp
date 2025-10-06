@@ -28,6 +28,8 @@
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.9" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
 		<PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
+		<PackageReference Include="MiniProfiler.AspNetCore.Mvc" Version="4.5.4" />
+		<PackageReference Include="MiniProfiler.EntityFrameworkCore" Version="4.5.4" />
 		<PackageReference Include="NUnit" Version="4.3.2" />
 		<PackageReference Include="NUnit3TestAdapter" Version="5.0.0" />
 		<PackageReference Include="Selenium.Support" Version="4.29.0" />

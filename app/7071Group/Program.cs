@@ -27,6 +27,15 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.Requ
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddControllersWithViews();
 
+// Register MiniProfiler
+builder.Services.AddMiniProfiler(options =>
+{
+    options.RouteBasePath = "/profiler";
+    options.ShouldProfile = (httpContext) => true;
+    options.ResultsAuthorize = request => true;
+    options.ResultsListAuthorize = request => true;
+}).AddEntityFramework();
+
 // Register application services
 builder.Services.AddScoped<CareService>();
 
@@ -47,6 +56,7 @@ else
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseMiniProfiler();
 app.UseAuthentication();
 app.UseAuthorization();
 
