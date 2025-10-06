@@ -5,18 +5,39 @@ services:
     build: .
     container_name: comp7171-webapp
     ports:
-      - "8000:80"
-      - "8001:443"
+      - "8000:8080"   # HTTP → localhost:8000
+      - "8001:8081"   # HTTPS → localhost:8001
     environment:
-      - ASPNETCORE_ENVIRONMENT
-      - ASPNETCORE_URLS
-      - ASPNETCORE_HTTPS_PORTS
-      - ASPNETCORE_Kestrel__Certificates__Default__Path
-      - ASPNETCORE_Kestrel__Certificates__Default__Password
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:8081;http://+:8080
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=fateh
     volumes:
       - ./7071Group/auth.db:/app/auth.db
       - ./7071Group/care.db:/app/care.db
       - ./7071Group/housing.db:/app/housing.db
       - ./7071Group/hr.db:/app/hr.db
-      - ${USERPROFILE}/.aspnet/https:/https/
+      - ./aspnetapp.pfx:/https/aspnetapp.pfx:ro
     restart: unless-stopped
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+  node-exporter:
+    image: prom/node-exporter
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+    - /proc:/host/proc:ro
+    - /sys:/host/sys:ro 

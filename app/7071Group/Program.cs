@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using _7071Group.Data;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,7 +39,6 @@ builder.Services.AddMiniProfiler(options =>
 
 // Register application services
 builder.Services.AddScoped<CareService>();
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -56,9 +56,17 @@ else
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseHttpMetrics();
 app.UseMiniProfiler();
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+    endpoints.MapRazorPages();
+    endpoints.MapMetrics(); // Exposes /metrics endpoint
+});
 
 app.MapControllerRoute(
     name: "default",
