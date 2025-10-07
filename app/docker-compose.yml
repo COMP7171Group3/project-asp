@@ -34,7 +34,9 @@ services:
     depends_on:
       - prometheus
     environment:
-      - GF_DASHBOARDS_MIN_REFRESH_INTERVAL=1s
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_DEFAULT_DASHBOARD_REFRESH_INTERVAL=1s
   node-exporter:
     image: prom/node-exporter
     container_name: node-exporter
